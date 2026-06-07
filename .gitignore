@@ -5,6 +5,7 @@
 .envrc
 venv/
 venv
-data/*
+data/sim_results/*
+!data/sim_results/.gitkeep
 !data/.gitkeep
 
