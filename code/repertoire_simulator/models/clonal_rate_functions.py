@@ -29,6 +29,10 @@ def simple_antigen_response_func(_c, a, _params, _t):
     
     return a
 
+def self_inhibition_antigen_response_func(c, a, params, _t):
+    
+    return a * (1 + params['epsilon']) / (1 + params['epsilon'] * c)
+
 def abundant_antigen_response_func(_c, a, params, _t):
     
     return params['K'] @ a

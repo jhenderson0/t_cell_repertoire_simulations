@@ -235,7 +235,7 @@ def simulate_repertoire(homeostatic_control_func, death_func, antigen_response_f
     c = np.ones((S, N)) * c_initial # S clones in N locations
     
     if fixed_antigen_pool:
-        a = np.ones((R, N)) * a_initial #R antigen in N locations
+        a = np.ones((R, N)) * a_initial # R antigen in N locations
     else:
         a = np.ones((S, N)) * a_initial # R = S (number of clones)
     

@@ -14,9 +14,9 @@ t_end = 5
 dt = 0.01
 
 # System dimensions
-S = int(2e4) # number of initial clones
+S = int(1e4) # number of initial clones
 R = S # number of initial antigens
-N = 2 # number of patches
+N = 1 # number of patches
 
 # initialisation 
 c_initial = np.random.zipf(2.2, (S, N)) #0.0
@@ -29,9 +29,9 @@ c_local_cutoff = 1e-11
 
 # clonal dynamic rates
 theta_c = 1e4 #rate of new clones into the repertoire (years^-1)
-b = 1e5 #basal birth rate (years^-1) 
-d = 2 #basal death rate (years^-1)
-M = 0.1 #migration timescale (years^-1)
+b = 1e7 #basal birth rate (years^-1) 
+d = 1 #basal death rate (years^-1)
+M = 0.0 #migration timescale (years^-1)
 
 # main parameter state dict
 initial_param_state = {}
@@ -48,16 +48,16 @@ homeostatic_control_func = models.local_homeostatic_competition_func
 initial_param_state['death'] = {'d': d}
 death_func = models.simple_death_func
 
-initial_param_state['antigen_response'] = {}
-antigen_response_func = models.simple_antigen_response_func
+initial_param_state['antigen_response'] = {'epsilon' : 1e-6}
+antigen_response_func = models.self_inhibition_antigen_response_func #models.simple_antigen_response_func
 
 initial_param_state['migration'] = {'migration_matrix': migration_matrix}
 migration_func = models.simple_migration_func
 
-demographic_stochasticity='yes'
+demographic_stochasticity='no'
 
 # antigen dynamics 
-lamb = 0.1 #antigen decay rate (years^-1)
+lamb = 1000 #antigen decay rate (years^-1)
 D = 1 #antigen fluctuation timescale (years^-1)
 initial_param_state['antigen'] = {'D': D, 'lamb': lamb}
 antigen_update_func = models.ou_antigen_update
@@ -87,7 +87,7 @@ c, a, param_state, records = lib.simulate_repertoire(homeostatic_control_func=ho
                                             c_initial=c_initial, a_initial=a_initial, c_new=c_new, a_new=a_new,
                                             c_replace_cutoff=c_replace_cutoff, c_local_cutoff=c_local_cutoff,
                                             continuum_update_method=continuum_update_method,
-                                            demographic_stochasticity=demographic_stochasticity, verbose=True, sample_dt=0.2)
+                                            demographic_stochasticity=demographic_stochasticity, verbose=True, sample_dt=0.05)
 
 print("Simulation complete! Saving results...")
 
