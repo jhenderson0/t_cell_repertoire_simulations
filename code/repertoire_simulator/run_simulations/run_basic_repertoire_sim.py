@@ -10,16 +10,16 @@ import repertoire_simulator.models as models
 
 # Simulation timing
 t_start = 0
-t_end = 5
+t_end = 10
 dt = 0.01
 
 # System dimensions
-S = int(1e4) # number of initial clones
+S = 1#int(1e4) # number of initial clones
 R = S # number of initial antigens
-N = 1 # number of patches
+N = 2 # number of patches
 
 # initialisation 
-c_initial = np.random.zipf(2.2, (S, N)) #0.0
+c_initial = 0.0# np.ones((S, N)) *  np.random.zipf(2.2, size=S)[:, None] #exponent 2.2
 a_initial = 0.0
 
 c_new = 1.0
@@ -27,14 +27,14 @@ a_new = 0.0
 c_replace_cutoff = 0.1
 c_local_cutoff = 1e-11
 
-# clonal dynamic rates
-theta_c = 1e4 #rate of new clones into the repertoire (years^-1)
-b = 1e7 #basal birth rate (years^-1) 
-d = 1 #basal death rate (years^-1)
-M = 0.0 #migration timescale (years^-1)
-
 # main parameter state dict
 initial_param_state = {}
+
+# clonal dynamic rates
+theta_c = 1e5 #rate of new clones into the repertoire (years^-1)
+b = 1e7 #basal birth rate (years^-1) 
+d = 10 #basal death rate (years^-1)
+M = 1 #migration timescale (years^-1)
 
 #all to all migration - will take to be homogenous for now
 base_migration_matrix = np.full((N, N), M / N)
@@ -48,23 +48,23 @@ homeostatic_control_func = models.local_homeostatic_competition_func
 initial_param_state['death'] = {'d': d}
 death_func = models.simple_death_func
 
-initial_param_state['antigen_response'] = {'epsilon' : 1e-6}
-antigen_response_func = models.self_inhibition_antigen_response_func #models.simple_antigen_response_func
+initial_param_state['antigen_response'] = {}#{'epsilon' : 1 / (b/d * 0.01)}
+antigen_response_func = models.simple_antigen_response_func #models.self_inhibition_antigen_response_func
 
 initial_param_state['migration'] = {'migration_matrix': migration_matrix}
 migration_func = models.simple_migration_func
 
-demographic_stochasticity='no'
+demographic_stochasticity='yes'
 
 # antigen dynamics 
-lamb = 1000 #antigen decay rate (years^-1)
-D = 1 #antigen fluctuation timescale (years^-1)
+lamb = 100 #antigen decay rate (years^-1)
+D =  1 #antigen fluctuation timescale (years^-1)
 initial_param_state['antigen'] = {'D': D, 'lamb': lamb}
 antigen_update_func = models.ou_antigen_update
-
-# encounter_rate = 0.1
-# lamb = 30
-# A = 50
+# 
+# encounter_rate = 5
+# lamb = 100
+# A = 100
 # initial_param_state['antigen'] = {'A': A, 'lamb': lamb, 'encounter_rate': encounter_rate}
 # antigen_update_func = models.shot_noise_antigen_update
 

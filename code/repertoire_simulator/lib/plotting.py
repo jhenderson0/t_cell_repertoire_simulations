@@ -24,14 +24,14 @@ def plot_referencescaling(ax=None, x=[4e-5, 4e-2], factor=1.0, color='k', expone
 ################################################################
 # Two-point inequality
 ################################################################      
-def get_empirical_log_ratios(abundances_i, abundances_j, threshold=10, base=10):
+def get_empirical_log_ratios(abundances_i, abundances_j, threshold=10, base=10, cmin=1):
     
     counts_1 = abundances_i
     counts_2 = abundances_j
     
-    #set abundances less than 1 to be zero
-    counts_1[counts_1 < 1] = 0.0
-    counts_2[counts_2 < 1] = 0.0
+    #set abundances less than c_min to be zero
+    counts_1[counts_1 < cmin] = 0.0
+    counts_2[counts_2 < cmin] = 0.0
     
     to_keep = ((counts_1 + counts_2) > threshold) & (counts_1 != 0) & (counts_2 != 0)
     

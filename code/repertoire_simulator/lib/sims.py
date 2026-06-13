@@ -88,8 +88,35 @@ def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
                                        homeostatic_control_func, death_func, antigen_response_func, migration_func)
 
             deterministic_increment = 0.5 * (dc0 + dc1) * thisdt
+            
+        elif method == "rk4":
 
-              
+            k1 = deterministic_clonal_evolution(c, a_for_rates, param_state, t,
+                                                homeostatic_control_func,
+                                                death_func,
+                                                antigen_response_func,
+                                                migration_func)
+
+            k2 = deterministic_clonal_evolution(c + 0.5 * thisdt * k1, a_for_rates, param_state, t + 0.5 * thisdt,
+                                                homeostatic_control_func,
+                                                death_func,
+                                                antigen_response_func,
+                                                migration_func)
+
+            k3 = deterministic_clonal_evolution(c + 0.5 * thisdt * k2, a_for_rates, param_state, t + 0.5 * thisdt,
+                                                homeostatic_control_func,
+                                                death_func,
+                                                antigen_response_func,
+                                                migration_func)
+
+            k4 = deterministic_clonal_evolution(c + thisdt * k3, a_for_rates, param_state, t + thisdt,
+                                                homeostatic_control_func,
+                                                death_func,
+                                                antigen_response_func,
+                                                migration_func)
+
+            deterministic_increment = (thisdt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+
         ####################################
         #Demographic noise
         ####################################

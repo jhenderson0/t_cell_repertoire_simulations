@@ -3,6 +3,10 @@ import numpy as np
 ############################################################
 # Homeostatic control
 ############################################################
+def simple_homeostatic_competition_func(c, params, _t):
+        
+    return params['b']
+
 def local_homeostatic_competition_func(c, params, _t):
     
     effective_birth_rate = params['b'] / (params['T0'] + c.sum(axis=0))
