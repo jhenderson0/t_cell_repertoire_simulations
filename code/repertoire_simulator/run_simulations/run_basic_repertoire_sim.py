@@ -14,12 +14,12 @@ t_end = 10
 dt = 0.01
 
 # System dimensions
-S = 1#int(1e4) # number of initial clones
+S = int(1e5) # number of initial clones
 R = S # number of initial antigens
-N = 2 # number of patches
+N = 1 # number of patches
 
 # initialisation 
-c_initial = 0.0# np.ones((S, N)) *  np.random.zipf(2.2, size=S)[:, None] #exponent 2.2
+c_initial = 1e7 / 10 / S # np.ones((S, N)) *  np.random.zipf(2.2, size=S)[:, None] #exponent 2.2
 a_initial = 0.0
 
 c_new = 1.0
@@ -31,9 +31,9 @@ c_local_cutoff = 1e-11
 initial_param_state = {}
 
 # clonal dynamic rates
-theta_c = 1e5 #rate of new clones into the repertoire (years^-1)
+theta_c = 1e4 #rate of new clones into the repertoire (years^-1)
 b = 1e7 #basal birth rate (years^-1) 
-d = 10 #basal death rate (years^-1)
+d = 1 #basal death rate (years^-1)
 M = 1 #migration timescale (years^-1)
 
 #all to all migration - will take to be homogenous for now

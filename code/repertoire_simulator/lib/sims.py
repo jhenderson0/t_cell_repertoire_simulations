@@ -2,8 +2,6 @@ import numpy as np
 from tqdm.auto import tqdm
 from .stats import get_average_simpsons_diversity
 
-#TOdo - make the rate function just give birth and death and have a different migration function
-
 #################################################################################
 # Update rates
 #################################################################################
@@ -66,6 +64,8 @@ def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
         #Growth and migration updates
         ####################################
         a_for_rates, a_next = antigen_update_func(a, param_state['antigen'], t, thisdt, prng=prng)
+        
+        #Simple Euler method for ODE integration
         if method == "euler":
             
             dc = deterministic_clonal_evolution(c, a_for_rates, param_state, t,
@@ -74,21 +74,19 @@ def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
             deterministic_increment = dc * thisdt
             
         
-        #Method for updating SDEs with Stratonovich noise  
+        #Method for updating SDEs with Stratonovich noise - also works as an rk2 update 
         elif method == "heun":
             
-            # Predictor
-            dc0 = deterministic_clonal_evolution(c, a_for_rates, param_state, t,
+            k1 = deterministic_clonal_evolution(c, a_for_rates, param_state, t,
                                        homeostatic_control_func, death_func, antigen_response_func, migration_func)
 
-            c_pred = c + dc0 * thisdt
 
-            # Corrector, using the SAME antigen realization.
-            dc1 = deterministic_clonal_evolution(c_pred, a_for_rates, param_state, t + thisdt,
+            k2 = deterministic_clonal_evolution(c + thisdt * k1, a_for_rates, param_state, t + thisdt,
                                        homeostatic_control_func, death_func, antigen_response_func, migration_func)
 
-            deterministic_increment = 0.5 * (dc0 + dc1) * thisdt
-            
+            deterministic_increment = 0.5 * (k1 + k2) * thisdt
+        
+        #More accurate ODE integrator
         elif method == "rk4":
 
             k1 = deterministic_clonal_evolution(c, a_for_rates, param_state, t,
