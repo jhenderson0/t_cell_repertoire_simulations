@@ -30,10 +30,13 @@ c_local_cutoff = 0.1
 # main parameter state dict
 initial_param_state = {}
 
-# clonal dynamic rates
-alpha = 1.2
-b = 1e7 #basal birth rate (years^-1) 
-M = 1 #migration timescale (years^-1)
+# key parameters
+alpha = 1.2 #power law exponent
+gamma = 0.2 #ratio of recruitment to basal proliferation
+D = 1 #antigenic environment strength (years^-1)
+lamb = 100 #antigen decay rate (years^-1)
+
+M = 1 #migration timescale (years^-1) - not used
 
 #all to all migration - will take to be homogenous for now
 base_migration_matrix = np.full((N, N), M / N)
@@ -41,9 +44,10 @@ np.fill_diagonal(base_migration_matrix, 0.0)
 migration_matrix = np.broadcast_to(base_migration_matrix[None, :, :], (1, N, N)).copy()
 
 # clonal dynamics functions
-initial_param_state['homeostatic_control'] = {'b': b, 'T0': 1}
-homeostatic_control_func = models.local_homeostatic_competition_func
-
+d = D * (alpha + (alpha - 1) / gamma)
+initial_param_state['death'] = {'d': d}
+death_func = models.simple_death_func
+    
 initial_param_state['antigen_response'] = {}
 antigen_response_func = models.simple_antigen_response_func
 
@@ -51,8 +55,6 @@ initial_param_state['migration'] = {'migration_matrix': migration_matrix}
 migration_func = models.simple_migration_func
 
 # antigen dynamics 
-lamb = 100 #antigen decay rate (years^-1)
-D = 1 #antigenic environment strength (years^-1)
 antigen_update_func = models.ou_antigen_update
 initial_param_state['antigen'] = {'D': D, 'lamb': lamb}
 
@@ -66,14 +68,16 @@ continuum_update_method="euler"
 #################################################################################
 print("Starting repertoire simulation...")
 
-ratios = np.logspace(3.5, 5.5, 10)
+ratios = np.logspace(1, 5.5, 10)
 for ratio in ratios:
     print(f"Running sim for ratio = {ratio}")
-    theta_c = D * ratio
-    d = 0.2 * b / ratio
     
-    initial_param_state['death'] = {'d': d}
-    death_func = models.simple_death_func
+    theta_c = D * ratio
+    b = theta_c / gamma
+    
+    initial_param_state['homeostatic_control'] = {'b': b, 'T0': 1}
+    homeostatic_control_func = models.local_homeostatic_competition_func
+    
     
     c, a, param_state, records = lib.simulate_repertoire(homeostatic_control_func=homeostatic_control_func,
                                                 death_func=death_func,
