@@ -44,7 +44,7 @@ def birth_death_noise_increment(c, a, param_state, t, dt,
 #################################################################################
 def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
                     homeostatic_control_func, death_func, antigen_response_func, migration_func,
-                    c_local_cutoff, antigen_update_func, method="euler", demographic_stochasticity="no", prng=np.random):
+                    c_cutoff, antigen_update_func, method="euler", demographic_stochasticity="no", prng=np.random):
 
     S, N = c.shape
     
@@ -132,15 +132,18 @@ def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
         a = a_next
         t += thisdt
 
-        # clones lower than threshold are zeroed
-        c[c < c_local_cutoff] = 0.0
+        ## clones lower than threshold everywhere are zeroed
+        below_cutoff_everywhere = np.all(c < c_cutoff, axis=1)
+        c[below_cutoff_everywhere, :] = 0.0
+    
+    
 
     return c, a, t_old + t_delta
 
 #################################################################################
 # Introduction events
 #################################################################################
-def introduce_clone(c, c_new, c_replace_cutoff, prng=np.random):
+def introduce_clone(c, c_new, c_cutoff, prng=np.random):
 
     S, N = c.shape
     
@@ -153,7 +156,7 @@ def introduce_clone(c, c_new, c_replace_cutoff, prng=np.random):
     
     # Find a globally rare clone to replace
     clone_totals = c.sum(axis=1)
-    is_replaceable = clone_totals < c_replace_cutoff 
+    is_replaceable = clone_totals < c_cutoff 
     
     if np.any(is_replaceable):
         candidates = np.flatnonzero(is_replaceable)
@@ -186,12 +189,12 @@ def introduce_antigen(a, clone_index, replace, a_new=0.0):
 
     return a
     
-def execute_introduction_event(c, a, param_state, c_new, c_replace_cutoff, a_new,
+def execute_introduction_event(c, a, param_state, c_new, c_cutoff, a_new,
                                fixed_antigen_pool=False, param_introduction_func=None, 
                                prng=np.random):
     
     #Introduce a new clone
-    c, clone_index, replace = introduce_clone(c, c_new, c_replace_cutoff, prng=prng)
+    c, clone_index, replace = introduce_clone(c, c_new, c_cutoff, prng=prng)
    
     # Choose whether to introduce a new antigen
     if not fixed_antigen_pool:
@@ -209,7 +212,7 @@ def execute_introduction_event(c, a, param_state, c_new, c_replace_cutoff, a_new
 #################################################################################
 # Run simulation
 #################################################################################
-def print_progress(c, t, t_end, pbar, progress_t):
+def print_progress(c, t, t_end, pbar, progress_t,  c_cutoff):
 
     new_progress_t = min(t, t_end)
     delta = max(0.0, new_progress_t - progress_t)
@@ -220,9 +223,8 @@ def print_progress(c, t, t_end, pbar, progress_t):
     c_copy[c_copy < 1] = 0.0
     N_cells = c_copy.sum(axis=0)
     Seff = get_average_simpsons_diversity(c)
-
     pbar.set_postfix({"t": f"{t:.3g}",
-                      "clones": int(np.sum(np.all(c > 1e-11, axis=1))),
+                      "clones": int(np.sum(np.all(c > c_cutoff, axis=1))),
                       "Seff/patch": f"{Seff:.1f}",
                       "cells/patch": f"{np.mean(N_cells):.2e}",
                       "cmax": f"{np.max(c):.2e}"})
@@ -249,7 +251,7 @@ def simulate_repertoire(homeostatic_control_func, death_func, antigen_response_f
                         t_start=0, t_end=1, dt=0.01, theta_c=1.0,
                         S=1, R=1, N=1, 
                         c_initial=0.0, a_initial=0.0, c_new=1.0, a_new=0.0,
-                        c_replace_cutoff=0.1, c_local_cutoff=1e-12,
+                        c_cutoff=0.1,
                         continuum_update_method="euler", demographic_stochasticity='no', seed=1996,  prng=np.random,
                         verbose=False, sample_dt=None):
 
@@ -281,16 +283,16 @@ def simulate_repertoire(homeostatic_control_func, death_func, antigen_response_f
         
         c, a, t = continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
                     homeostatic_control_func, death_func, antigen_response_func, migration_func,
-                    c_local_cutoff, antigen_update_func, method=continuum_update_method,
+                    c_cutoff, antigen_update_func, method=continuum_update_method,
                     demographic_stochasticity=demographic_stochasticity, prng=prng)
         
         next_sample_t = record_sample(records, c, a, param_state, t, next_sample_t, sample_dt)
         
-        progress_t = print_progress(c, t, t_end, pbar, progress_t)
+        progress_t = print_progress(c, t, t_end, pbar, progress_t,  c_cutoff)
         
         introevent = True
         if introevent:
-            c, a, param_state = execute_introduction_event(c, a, param_state, c_new, c_replace_cutoff, a_new, 
+            c, a, param_state = execute_introduction_event(c, a, param_state, c_new, c_cutoff, a_new, 
                                                            fixed_antigen_pool, param_introduction_func,
                                                            prng=prng)
             

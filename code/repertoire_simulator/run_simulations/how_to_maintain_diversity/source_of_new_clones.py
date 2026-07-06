@@ -24,8 +24,7 @@ a_initial = 0.0
 
 c_new = 1.0
 a_new = 0.0
-c_replace_cutoff = 0.1
-c_local_cutoff = 0.1
+c_cutoff = 0.1
 
 # main parameter state dict
 initial_param_state = {}
@@ -88,7 +87,7 @@ for ratio in ratios:
                                                 t_start=t_start, t_end=t_end, dt=dt,
                                                 theta_c=theta_c, S=S, R=R, N=N,
                                                 c_initial=c_initial, a_initial=a_initial, c_new=c_new, a_new=a_new,
-                                                c_replace_cutoff=c_replace_cutoff, c_local_cutoff=c_local_cutoff,
+                                                c_replace_cutoff=c_cutoff,
                                                 continuum_update_method=continuum_update_method,
                                                 demographic_stochasticity=demographic_stochasticity, verbose=True, sample_dt=0.05)
 
