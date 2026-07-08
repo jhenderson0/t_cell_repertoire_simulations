@@ -7,6 +7,8 @@ import repertoire_simulator.models as models
 #################################################################################
 # Model setup
 #################################################################################
+#rng
+seed = 1996
 
 # Simulation timing
 t_start = 0
@@ -33,7 +35,7 @@ initial_param_state = {}
 theta_c = 1e2 #rate of new clones into the repertoire (years^-1) - just for time stepping
 b = 1e7 #basal birth rate (years^-1) 
 d = 1 #basal death rate (years^-1)
-M = 1 #migration timescale (years^-1)
+M = 0 #migration timescale (years^-1)
 
 #all to all migration - will take to be homogenous for now
 base_migration_matrix = np.full((N, N), M / N)
@@ -68,7 +70,7 @@ continuum_update_method="euler"
 print("Starting repertoire simulation...")
 
 Ds = np.logspace(-1, 1, 10)
-for D in Ds:
+for i, D in enumerate(Ds):
     print(f"Running sim for D = {D}")
     initial_param_state['antigen'] = {'D': D, 'lamb': lamb}
     c, a, param_state, records = lib.simulate_repertoire(homeostatic_control_func=homeostatic_control_func,
@@ -80,13 +82,11 @@ for D in Ds:
                                                 t_start=t_start, t_end=t_end, dt=dt,
                                                 theta_c=theta_c, S=S, R=R, N=N,
                                                 c_initial=c_initial, a_initial=a_initial, c_new=c_new, a_new=a_new,
-                                                c_replace_cutoff=c_cutoff,
+                                                c_cutoff=c_cutoff,
                                                 continuum_update_method=continuum_update_method,
-                                                demographic_stochasticity=demographic_stochasticity, verbose=True, sample_dt=0.05)
+                                                demographic_stochasticity=demographic_stochasticity, verbose=True, sample_dt=0.05, seed=seed+i)
 
     print("Simulation complete! Saving results...")
-
-    c[c < 1] = 0.0
-
+    
     np.savez_compressed(f"../../../../data/how_to_maintain_diversity/rem_transition/noise_strength_{D}.npz", 
                         **{key: np.array(value, dtype=object) for key, value in records.items()})

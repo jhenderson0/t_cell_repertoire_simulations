@@ -7,11 +7,13 @@ import repertoire_simulator.models as models
 #################################################################################
 # Model setup
 #################################################################################
+#rng
+seed = 100
 
 # Simulation timing
 t_start = 0
-t_end = 10
-dt = 0.01
+t_end = 1000
+dt = 0.001
 
 # System dimensions
 S = 1 # number of initial clones
@@ -19,7 +21,7 @@ R = S # number of initial antigens
 N = 1 # number of patches
 
 # initialisation 
-c_initial = 0.0#np.ones((S, N)) *  np.random.zipf(2.2, size=S)[:, None] 
+c_initial = 0.0 #np.ones((S, N)) *  np.random.zipf(2.2, size=S)[:, None] 
 a_initial = 0.0
 
 c_new = 1.0
@@ -30,12 +32,13 @@ c_cutoff = 0.1
 initial_param_state = {}
 
 # key parameters
-alpha = 1.2 #power law exponent
-gamma = 0.2 #ratio of recruitment to basal proliferation
 D = 1 #antigenic environment strength (years^-1)
-lamb = 100 #antigen decay rate (years^-1)
+lamb = 1000 #antigen decay rate (years^-1)
 
-M = 1 #migration timescale (years^-1) - not used
+alpha = 1.2 #power law exponent
+gamma = alpha - 1 #ratio of recruitment to basal proliferation
+
+M = 0.0 #migration timescale (years^-1) - not used
 
 #all to all migration - will take to be homogenous for now
 base_migration_matrix = np.full((N, N), M / N)
@@ -67,8 +70,8 @@ continuum_update_method="euler"
 #################################################################################
 print("Starting repertoire simulation...")
 
-ratios = np.logspace(1, 5.5, 10)
-for ratio in ratios:
+ratios = [1e5] #np.logspace(1, 5.5, 10)
+for i, ratio in enumerate(ratios):
     print(f"Running sim for ratio = {ratio}")
     
     theta_c = D * ratio
@@ -87,13 +90,10 @@ for ratio in ratios:
                                                 t_start=t_start, t_end=t_end, dt=dt,
                                                 theta_c=theta_c, S=S, R=R, N=N,
                                                 c_initial=c_initial, a_initial=a_initial, c_new=c_new, a_new=a_new,
-                                                c_replace_cutoff=c_cutoff,
+                                                c_cutoff=c_cutoff,
                                                 continuum_update_method=continuum_update_method,
-                                                demographic_stochasticity=demographic_stochasticity, verbose=True, sample_dt=0.05)
+                                                demographic_stochasticity=demographic_stochasticity, verbose=True, sample_dt=0.05, seed=seed+i)
 
     print("Simulation complete! Saving results...")
- 
-    c[c < 1] = 0.0
-
-    np.savez_compressed(f"../../../../data/how_to_maintain_diversity/source_of_clones/ratio_{ratio}.npz", 
-                        **{key: np.array(value, dtype=object) for key, value in records.items()})
+    
+    np.savez_compressed(f"../../../../data/how_to_maintain_diversity/source_of_clones/long_time_sims/alpha_{alpha}_theta_{np.log10(ratio)}.npz", **{key: np.array(value, dtype=object) for key, value in records.items()})

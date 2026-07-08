@@ -129,15 +129,14 @@ def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
         #Apply updates
         ####################################
         c += deterministic_increment + demographic_noise
+        c = np.maximum(c, 0.0)
         a = a_next
         t += thisdt
 
         ## clones lower than threshold everywhere are zeroed
         below_cutoff_everywhere = np.all(c < c_cutoff, axis=1)
-        c[below_cutoff_everywhere, :] = 0.0
-    
-    
-
+        c[below_cutoff_everywhere] = 0.0
+        
     return c, a, t_old + t_delta
 
 #################################################################################
@@ -156,10 +155,11 @@ def introduce_clone(c, c_new, c_cutoff, prng=np.random):
     
     # Find a globally rare clone to replace
     clone_totals = c.sum(axis=1)
-    is_replaceable = clone_totals < c_cutoff 
+    below_cutoff_everywhere = np.all(c < c_cutoff, axis=1)
     
-    if np.any(is_replaceable):
-        candidates = np.flatnonzero(is_replaceable)
+    if np.any(below_cutoff_everywhere):
+        candidates = np.flatnonzero(below_cutoff_everywhere)
+        clone_totals = c.sum(axis=1)
         clone_index = candidates[np.argmin(clone_totals[candidates])]
         replace = True
 
@@ -219,9 +219,7 @@ def print_progress(c, t, t_end, pbar, progress_t,  c_cutoff):
 
     pbar.update(delta)
     
-    c_copy = c.copy()
-    c_copy[c_copy < 1] = 0.0
-    N_cells = c_copy.sum(axis=0)
+    N_cells = c.sum(axis=0)
     Seff = get_average_simpsons_diversity(c)
     pbar.set_postfix({"t": f"{t:.3g}",
                       "clones": int(np.sum(np.all(c > c_cutoff, axis=1))),
@@ -257,7 +255,7 @@ def simulate_repertoire(homeostatic_control_func, death_func, antigen_response_f
 
     #set rng
     prng.seed(seed=seed)
-    
+        
     # initialize clonal and antigen array
     c = np.ones((S, N)) * c_initial # S clones in N locations
     

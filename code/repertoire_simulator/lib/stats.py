@@ -1,10 +1,12 @@
 import numpy as np
+from scipy.stats import linregress
+from scipy.optimize import curve_fit
 
+#################################################################################
+# Simpson's diversity
+#################################################################################
 def get_global_simpsons_diversity(c):
     
-    c = c.copy()
-    c[c < 1] = 0.0  
-
     species_totals = c.sum(axis=1)
     total_abundance = species_totals.sum()
     if total_abundance <= 0:
@@ -13,11 +15,7 @@ def get_global_simpsons_diversity(c):
     p = species_totals / total_abundance
     return 1.0 / np.sum(p ** 2)
 
-
 def get_average_simpsons_diversity(c):
-    
-    c = c.copy()
-    c[c < 1] = 0.0  
 
     location_totals = c.sum(axis=0)
     nonempty = location_totals > 0
@@ -28,3 +26,90 @@ def get_average_simpsons_diversity(c):
     local_simpson = 1.0 / np.sum(p ** 2, axis=0)
 
     return np.mean(local_simpson)
+
+#################################################################################
+# Expectations after a burn in period
+#################################################################################
+def mean_after_burn(x, burn_frac=0.2):
+    
+    x = np.asarray(x)
+    burn = int(burn_frac * len(x))
+    x = x[burn:]
+    x = x[np.isfinite(x) & (x > 0)]
+ 
+    return np.mean(x)
+
+def median_after_burn(x, burn_frac=0.2):
+    
+    x = np.asarray(x)
+    burn = int(burn_frac * len(x))
+    x = x[burn:]
+    x = x[np.isfinite(x) & (x > 0)]
+ 
+    return np.median(x)
+
+def geometric_mean_after_burn(x, burn_frac=0.2):
+    
+    x = np.asarray(x)
+    burn = int(burn_frac * len(x))
+    x = x[burn:]
+    x = x[np.isfinite(x) & (x > 0)]
+ 
+    return np.exp(np.mean(np.log(x)))
+
+#################################################################################
+# Power spectral densities
+#################################################################################
+def psd_model(f, A, fc, beta, floor):
+    
+    return floor + A / (1 + (f / fc)**beta)
+
+#################################################################################
+# Model fitting
+#################################################################################
+def fit_power_law_prefactor(x, y, exponent):
+    
+    logx = np.log(x)
+    logy = np.log(y)
+
+    log_prefactor = np.mean(logy - exponent * logx)
+    
+    return np.exp(log_prefactor)
+
+def fit_power_law(x, y):
+    
+    logx = np.log10(x)
+    logy = np.log10(y)
+    
+    slope, intercept, r_value, p_value, std_err = linregress(logx, logy)
+
+    prefactor = 10**intercept
+    exponent = slope
+    
+    return prefactor, exponent
+
+def fit_psd(f, Pxx, fit_log=True, maxfev=10000):
+    m = (f > 0) & np.isfinite(Pxx) & (Pxx > 0)
+    f = f[m]
+    Pxx = Pxx[m]
+
+    p0 = [np.max(Pxx), f[len(f)//4], 2.0, np.min(Pxx)]
+
+    bounds = ([0, f.min(), 0.1, 0], [np.inf, f.max(), 5.0, np.inf])
+
+    if fit_log:
+        def model_to_fit(f, A, fc, beta, floor):
+            return np.log(psd_model(f, A, fc, beta, floor))
+
+        y = np.log(Pxx)
+    
+    else:
+        model_to_fit = psd_model
+        y = Pxx
+
+    popt, pcov = curve_fit(model_to_fit, f, y, p0=p0, bounds=bounds, maxfev=maxfev)
+
+    A, fc, beta, floor = popt
+    tau = 1 / (2 * np.pi * fc)
+
+    return A, fc, beta, floor, tau

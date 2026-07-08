@@ -8,6 +8,9 @@ import repertoire_simulator.models as models
 # Model setup
 #################################################################################
 
+#rng
+seed = 1996
+
 # Simulation timing
 t_start = 0
 t_end = 200
@@ -44,7 +47,7 @@ death_func = models.simple_death_func
 initial_param_state['antigen_response'] = {}#{'epsilon' : 1 / (b/d * 0.01)}
 antigen_response_func = models.simple_antigen_response_func #models.self_inhibition_antigen_response_func
 
-demographic_stochasticity='no'
+demographic_stochasticity='yes'
 
 # antigen dynamics 
 lamb = 500 #antigen decay rate (years^-1)
@@ -61,7 +64,7 @@ continuum_update_method="euler"
 print("Starting repertoire simulation...")
 
 Ns = np.linspace(1, 20, 10).astype(int)
-for N in Ns:
+for i, N in enumerate(Ns):
     print(f"Running sim for N = {N}")
     
     base_migration_matrix = np.full((N, N), M / N)
@@ -82,11 +85,9 @@ for N in Ns:
                                                 c_initial=c_initial, a_initial=a_initial, c_new=c_new, a_new=a_new,
                                                 c_cutoff=c_cutoff,
                                                 continuum_update_method=continuum_update_method,
-                                                demographic_stochasticity=demographic_stochasticity, verbose=True, sample_dt=0.05)
+                                                demographic_stochasticity=demographic_stochasticity, verbose=True, sample_dt=0.05, seed=seed+i)
 
     print("Simulation complete! Saving results...")
-
-    c[c < 1] = 0.0
 
     np.savez_compressed(f"../../../../data/how_to_maintain_diversity/metacommunity_buffering/patches_{N}.npz", 
                         **{key: np.array(value, dtype=object) for key, value in records.items()})

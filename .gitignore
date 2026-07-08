@@ -5,6 +5,7 @@
 .envrc
 venv/
 venv
+figures/**
 data/**
 !data/**/
 !data/.gitkeep
