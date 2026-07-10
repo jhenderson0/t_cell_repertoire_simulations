@@ -70,7 +70,7 @@ continuum_update_method="euler"
 #################################################################################
 print("Starting repertoire simulation...")
 
-ratios = [1e5] #np.logspace(1, 5.5, 10)
+ratios = [5e1] #np.logspace(1, 5.5, 10)
 for i, ratio in enumerate(ratios):
     print(f"Running sim for ratio = {ratio}")
     
@@ -96,4 +96,4 @@ for i, ratio in enumerate(ratios):
 
     print("Simulation complete! Saving results...")
     
-    np.savez_compressed(f"../../../../data/how_to_maintain_diversity/source_of_clones/long_time_sims/alpha_{alpha}_theta_{np.log10(ratio)}.npz", **{key: np.array(value, dtype=object) for key, value in records.items()})
+    np.savez_compressed(f"../../../../data/how_to_maintain_diversity/source_of_clones/long_time_sims/alpha_{alpha}_theta_{np.log10(ratio):.1f}.npz", **{key: np.array(value, dtype=object) for key, value in records.items()})

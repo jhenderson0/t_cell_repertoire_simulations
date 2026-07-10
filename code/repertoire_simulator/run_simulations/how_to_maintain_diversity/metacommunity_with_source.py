@@ -13,29 +13,40 @@ seed = 1996
 
 # Simulation timing
 t_start = 0
-t_end = 1000
+t_end = 500
 dt = 0.001
 
 # System dimensions
-S = int(1e3) # number of initial clones
+S = 1 # number of initial clones
 R = S # number of initial antigens
 
 # initialisation 
-c_initial = 1e7 / 10 / S # np.ones((S, N)) *  np.random.zipf(2.2, size=S)[:, None] #exponent 2.2
+c_initial = 1 # np.ones((S, N)) *  np.random.zipf(2.2, size=S)[:, None] #exponent 2.2
 a_initial = 0.0
 
-c_new = 0.0
+c_new = 1.0
 a_new = 0.0
 c_cutoff = 0.1
 
 # main parameter state dict
 initial_param_state = {}
 
+#key ratios
+theta_over_D = 1e4
+gamma = 0.2 
+alpha = 1.2
+
+# antigen dynamics 
+D = 1
+lamb = 1000 #antigen decay rate (years^-1)
+antigen_update_func = models.ou_antigen_update
+initial_param_state['antigen'] = {'D': D, 'lamb': lamb}
+
 # clonal dynamic rates
-theta_c = 1e1 #rate of new clones into the repertoire (years^-1)
-b = 1e7 #basal birth rate (years^-1) 
-d = 10 #basal death rate (years^-1)
-M = 100 #migration timescale (years^-1) (low migration is M = 0.1 high is M = 100)
+theta_c = theta_over_D * D #rate of new clones into the repertoire (years^-1) - just for time stepping
+b = theta_c / gamma #basal birth rate (years^-1) 
+d = D * (alpha + (alpha - 1) / gamma) #basal death rate (years^-1)
+M = 10 #migration timescale (years^-1)
 
 # clonal dynamics functions
 initial_param_state['homeostatic_control'] = {'b': b, 'T0': 1}
@@ -44,16 +55,10 @@ homeostatic_control_func = models.local_homeostatic_competition_func
 initial_param_state['death'] = {'d': d}
 death_func = models.simple_death_func
 
-initial_param_state['antigen_response'] = {}#{'epsilon' : 1 / (b/d * 0.01)}
-antigen_response_func = models.simple_antigen_response_func #models.self_inhibition_antigen_response_func
+initial_param_state['antigen_response'] = {}
+antigen_response_func = models.simple_antigen_response_func 
 
 demographic_stochasticity='yes'
-
-# antigen dynamics 
-lamb = 1000 #antigen decay rate (years^-1)
-D =  1 #antigen fluctuation timescale (years^-1)
-initial_param_state['antigen'] = {'D': D, 'lamb': lamb}
-antigen_update_func = models.ou_antigen_update
 
 # update method
 continuum_update_method="euler" 
@@ -63,7 +68,7 @@ continuum_update_method="euler"
 #################################################################################
 print("Starting repertoire simulation...")
 
-Ns = np.linspace(1, 30, 10).astype(int)
+Ns = np.linspace(2, 20, 3).astype(int)
 for i, N in enumerate(Ns):
     print(f"Running sim for N = {N}")
     
@@ -89,5 +94,5 @@ for i, N in enumerate(Ns):
 
     print("Simulation complete! Saving results...")
 
-    np.savez_compressed(f"../../../../data/how_to_maintain_diversity/metacommunity_buffering/strong_migration_limit/patches_{N}.npz", 
+    np.savez_compressed(f"../../../../data/how_to_maintain_diversity/metacommunity_buffering/buffering_of_diversity_fluctations/patches_{N}.npz", 
                         **{key: np.array(value, dtype=object) for key, value in records.items()})
