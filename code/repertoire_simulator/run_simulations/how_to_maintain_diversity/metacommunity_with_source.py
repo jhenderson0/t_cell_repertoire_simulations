@@ -32,7 +32,7 @@ c_cutoff = 0.1
 initial_param_state = {}
 
 #key ratios
-theta_over_D = 1e4
+theta_over_D = 1e3
 gamma = 0.2 
 alpha = 1.2
 
@@ -68,7 +68,7 @@ continuum_update_method="euler"
 #################################################################################
 print("Starting repertoire simulation...")
 
-Ns = np.linspace(2, 20, 3).astype(int)
+Ns = np.linspace(2, 15, 5).astype(int)
 for i, N in enumerate(Ns):
     print(f"Running sim for N = {N}")
     
@@ -94,5 +94,5 @@ for i, N in enumerate(Ns):
 
     print("Simulation complete! Saving results...")
 
-    np.savez_compressed(f"../../../../data/how_to_maintain_diversity/metacommunity_buffering/buffering_of_diversity_fluctations/patches_{N}.npz", 
+    np.savez_compressed(f"../../../../data/how_to_maintain_diversity/metacommunity_buffering/buffering_of_diversity_fluctuations/patches_{N}.npz", 
                         **{key: np.array(value, dtype=object) for key, value in records.items()})

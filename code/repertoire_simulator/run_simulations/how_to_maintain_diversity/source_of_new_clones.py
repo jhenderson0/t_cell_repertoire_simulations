@@ -70,7 +70,7 @@ continuum_update_method="euler"
 #################################################################################
 print("Starting repertoire simulation...")
 
-ratios = [5e1] #np.logspace(1, 5.5, 10)
+ratios = [1e5] #np.logspace(1, 5.5, 10)
 for i, ratio in enumerate(ratios):
     print(f"Running sim for ratio = {ratio}")
     

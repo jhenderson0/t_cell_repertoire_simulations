@@ -3,6 +3,49 @@ from scipy.stats import linregress
 from scipy.optimize import curve_fit
 
 #################################################################################
+# Compute CDFs
+#################################################################################
+def empirical_cdf(x):
+    
+    x = np.sort(x[np.isfinite(x)])
+    n = len(x)
+    cdf = (np.arange(1, n + 1) - 0.5) / n
+    
+    return x, cdf
+
+def conditional_tail_cdf(x, tail="lower", threshold=1.0):
+    
+    if tail == "lower":
+        tail_x = x[x < threshold]
+
+    elif tail == "upper":
+        tail_x = x[x > threshold]
+
+    tail_x = np.sort(tail_x)
+    n = len(tail_x)
+    if tail == "lower":
+        tail_probability = (np.arange(1, n + 1) - 0.5) / n
+
+    else:
+        tail_probability = (n - np.arange(n) - 0.5) / n
+
+    return tail_x, tail_probability
+
+#################################################################################
+# Extreme value calculations
+#################################################################################
+def mean_over_threshold(x, thresholds, tail="lower"):
+    
+    if tail == "lower":
+        means = [np.mean(x[x < threshold]) if np.any(x < threshold) else np.nan for threshold in thresholds]
+
+    else:
+        means = [np.mean(x[x > threshold]) if np.any(x > threshold) else np.nan for threshold in thresholds]
+
+    return np.asarray(means)
+
+
+#################################################################################
 # Simpson's diversity
 #################################################################################
 def get_global_simpsons_diversity(c):
@@ -30,30 +73,39 @@ def get_average_simpsons_diversity(c):
 #################################################################################
 # Expectations after a burn in period
 #################################################################################
-def mean_after_burn(x, burn_frac=0.2):
+def results_after_burn(x, burn_frac=0.2, xmin=0):
     
     x = np.asarray(x)
     burn = int(burn_frac * len(x))
     x = x[burn:]
-    x = x[np.isfinite(x) & (x > 0)]
+    x = x[np.isfinite(x) & (x > xmin)]
+ 
+    return x
+
+def mean_after_burn(x, burn_frac=0.2, xmin=0):
+    
+    x = np.asarray(x)
+    burn = int(burn_frac * len(x))
+    x = x[burn:]
+    x = x[np.isfinite(x) & (x > xmin)]
  
     return np.mean(x)
 
-def median_after_burn(x, burn_frac=0.2):
+def median_after_burn(x, burn_frac=0.2, xmin=0):
     
     x = np.asarray(x)
     burn = int(burn_frac * len(x))
     x = x[burn:]
-    x = x[np.isfinite(x) & (x > 0)]
+    x = x[np.isfinite(x) & (x > xmin)]
  
     return np.median(x)
 
-def geometric_mean_after_burn(x, burn_frac=0.2):
+def geometric_mean_after_burn(x, burn_frac=0.2, xmin=0):
     
     x = np.asarray(x)
     burn = int(burn_frac * len(x))
     x = x[burn:]
-    x = x[np.isfinite(x) & (x > 0)]
+    x = x[np.isfinite(x) & (x > xmin)]
  
     return np.exp(np.mean(np.log(x)))
 
