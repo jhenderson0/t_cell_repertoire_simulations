@@ -77,10 +77,13 @@ def get_empirical_log_ratios(abundances_i, abundances_j, threshold=10, base=10, 
     
     to_keep = ((counts_1 + counts_2) > threshold) & (counts_1 != 0) & (counts_2 != 0)
     
-    counts_1 = counts_1[to_keep]
+    counts_1 = counts_1[to_keep] 
     counts_2 = counts_2[to_keep]
     
-    log_ratios = np.log(counts_1/counts_2) / np.log(base)
+    c_tilde_1 = counts_1 / np.sum(counts_1)
+    c_tilde_2 = counts_2 / np.sum(counts_2)
+    
+    log_ratios = np.log(c_tilde_1 / c_tilde_2) / np.log(base)
     
     return log_ratios
 

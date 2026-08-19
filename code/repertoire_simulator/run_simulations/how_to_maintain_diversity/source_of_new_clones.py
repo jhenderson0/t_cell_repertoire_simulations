@@ -12,7 +12,7 @@ seed = 100
 
 # Simulation timing
 t_start = 0
-t_end = 1000
+t_end = 100
 dt = 0.001
 
 # System dimensions
@@ -32,7 +32,7 @@ c_cutoff = 0.1
 initial_param_state = {}
 
 # key parameters
-D = 1 #antigenic environment strength (years^-1)
+D = 0.1 #antigenic environment strength (years^-1)
 lamb = 1000 #antigen decay rate (years^-1)
 
 alpha = 1.2 #power law exponent
@@ -96,4 +96,4 @@ for i, ratio in enumerate(ratios):
 
     print("Simulation complete! Saving results...")
     
-    np.savez_compressed(f"../../../../data/how_to_maintain_diversity/source_of_clones/long_time_sims/alpha_{alpha}_theta_{np.log10(ratio):.1f}.npz", **{key: np.array(value, dtype=object) for key, value in records.items()})
+    np.savez_compressed(f"../../../../data/sim_results/realistic_sim.npz", **{key: np.array(value, dtype=object) for key, value in records.items()})
