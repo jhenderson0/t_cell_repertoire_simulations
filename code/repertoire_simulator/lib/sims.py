@@ -142,7 +142,7 @@ def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
 #################################################################################
 # Introduction events
 #################################################################################
-def introduce_clone(c, c_new, c_cutoff, prng=np.random):
+def introduce_clone(c, c_new, c_cutoff, single_location_intro=True, prng=np.random):
 
     S, N = c.shape
     

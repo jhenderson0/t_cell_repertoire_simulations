@@ -8,43 +8,37 @@ import repertoire_simulator.models as models
 # Model setup
 #################################################################################
 
-#rng
-seed = 1996
-
-# Simulation timing
+# Simulation time
 t_start = 0
-t_end = 100
-dt = 0.001
+t_end = 2
+dt = 5e-4
 
-# System dimensions
-S = 1 # number of initial clones
-R = S # number of initial antigens
-N = 2 # number of patches
+# Dimensions
+S = int(1e5)
+R = S
+N = 2
 
-# initialisation 
-c_initial = np.ones((S, N))
+# Parameters controlling the single-species distribution
+M = 1.0
+D = 5.0
+lamb = 1.0
+
+# Parameters controlling the total population
+d = D + M  
+T_star = 1e7
+b = (d - D) * T_star
+
+# Every clone starts with equal abundance in both patches
+c_initial = T_star / S
 a_initial = 0.0
 
-c_new = 1.0
+# No recruitment or artificial extinction during the recovery test
+theta_c = 10
+c_new = 0.0
 a_new = 0.0
-c_cutoff = 0.1
+c_cutoff = 0.0
 
-# main parameter state dict
 initial_param_state = {}
-
-# key parameters
-D = 1 #antigenic environment strength (years^-1)
-lamb = 500 #antigen decay rate (years^-1)
-
-# clonal dynamic rates
-alpha = 1.2 #power law exponent
-gamma = alpha - 1 #ratio of recruitment to basal proliferation
-ratio = 1e5
-theta_c = D * ratio
-b = theta_c / gamma
-d = D * (alpha + (alpha - 1) / gamma)
-
-M = 0.1 #migration timescale (years^-1) 
 
 # migration rates
 base_migration_matrix = np.full((N, N), M / N)
@@ -64,7 +58,7 @@ antigen_response_func = models.simple_antigen_response_func
 initial_param_state['migration'] = {'migration_matrix': migration_matrix}
 migration_func = models.simple_migration_func
 
-demographic_stochasticity='yes'
+demographic_stochasticity='no'
 
 # antigen dynamics 
 initial_param_state['antigen'] = {'D': D, 'lamb': lamb}
@@ -72,6 +66,9 @@ antigen_update_func = models.ou_antigen_update
 
 # update method
 continuum_update_method="euler" 
+
+#rng
+seed = 12345 + int(M + D + lamb + b)
 
 #################################################################################
 # Run the simulation
@@ -93,5 +90,5 @@ c, a, param_state, records = lib.simulate_repertoire(homeostatic_control_func=ho
 
 print("Simulation complete! Saving results...")
 
-np.savez_compressed(f"../../../../data/sim_results/two_patches_strong_white_noise.npz", 
+np.savez_compressed(f"../../../../data/sim_results/two_patches_weak_coloured_noise.npz", 
                         **{key: np.array(value, dtype=object) for key, value in records.items()})

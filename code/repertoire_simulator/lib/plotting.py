@@ -66,7 +66,7 @@ def plot_referencescaling(ax=None, x=[4e-5, 4e-2], factor=1.0, color='k', expone
 ################################################################
 # Two-point inequality
 ################################################################      
-def get_empirical_log_ratios(abundances_i, abundances_j, threshold=10, base=10, cmin=1):
+def get_empirical_log_ratios(abundances_i, abundances_j, threshold=10, base=10, cmin=0):
     
     counts_1 = abundances_i
     counts_2 = abundances_j
@@ -80,8 +80,8 @@ def get_empirical_log_ratios(abundances_i, abundances_j, threshold=10, base=10, 
     counts_1 = counts_1[to_keep] 
     counts_2 = counts_2[to_keep]
     
-    c_tilde_1 = counts_1 / np.sum(counts_1)
-    c_tilde_2 = counts_2 / np.sum(counts_2)
+    c_tilde_1 = counts_1 
+    c_tilde_2 = counts_2
     
     log_ratios = np.log(c_tilde_1 / c_tilde_2) / np.log(base)
     
