@@ -14,14 +14,14 @@ t_end = 2
 dt = 5e-4
 
 # Dimensions
-S = int(1e5)
+S = int(1e6)
 R = S
 N = 2
 
 # Parameters controlling the single-species distribution
 M = 1.0
 D = 5.0
-lamb = 1.0
+lamb = 1000
 
 # Parameters controlling the total population
 d = D + M  
@@ -90,5 +90,5 @@ c, a, param_state, records = lib.simulate_repertoire(homeostatic_control_func=ho
 
 print("Simulation complete! Saving results...")
 
-np.savez_compressed(f"../../../../data/sim_results/two_patches_weak_coloured_noise.npz", 
+np.savez_compressed(f"../../../../data/sim_results/two_patches_medium_white_noise.npz", 
                         **{key: np.array(value, dtype=object) for key, value in records.items()})

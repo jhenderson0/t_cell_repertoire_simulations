@@ -43,23 +43,20 @@ def birth_death_noise_increment(c, a, param_state, t, dt,
 # Evolutions step
 #################################################################################
 def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
-                    homeostatic_control_func, death_func, antigen_response_func, migration_func,
-                    c_cutoff, antigen_update_func, method="euler", demographic_stochasticity="no", prng=np.random):
+                    homeostatic_control_func, death_func,
+                    antigen_response_func, migration_func,
+                    c_cutoff, antigen_update_func, method="euler",
+                    demographic_stochasticity="no", prng=np.random, t_stop=None):
 
     S, N = c.shape
-    
-    # determine next intro event
-    t_old = t
-    t_delta = prng.exponential(1.0 / theta_c)
-    
-    #progress clonal abundances and antigenic levels
-    while t < t_old + t_delta:
-        # make time step fit next intro event time
-        if t + dt > t_old + t_delta:
-            thisdt = t_old + t_delta - t
-        else:
-            thisdt = dt
-            
+
+    if t_stop is None:
+        t_stop = t + prng.exponential(1.0 / theta_c)
+
+    # Progress clonal abundances and antigenic levels
+    while t < t_stop:
+        thisdt = min(dt, t_stop - t)
+
         ####################################
         #Growth and migration updates
         ####################################
@@ -116,7 +113,7 @@ def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
             deterministic_increment = (thisdt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
         ####################################
-        #Demographic noise
+        #Demographic noise - Ito update
         ####################################
         if demographic_stochasticity == "yes":
             demographic_noise = birth_death_noise_increment(c, a_for_rates, param_state, t, thisdt,
@@ -137,12 +134,12 @@ def continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
         below_cutoff_everywhere = np.all(c < c_cutoff, axis=1)
         c[below_cutoff_everywhere] = 0.0
         
-    return c, a, t_old + t_delta
+    return c, a, t_stop
 
 #################################################################################
 # Introduction events
 #################################################################################
-def introduce_clone(c, c_new, c_cutoff, single_location_intro=True, prng=np.random):
+def introduce_clone(c, c_new, c_cutoff, prng=np.random):
 
     S, N = c.shape
     
@@ -209,6 +206,40 @@ def execute_introduction_event(c, a, param_state, c_new, c_cutoff, a_new,
     
     return c, a, param_state
 
+def get_next_introduction_time(t, t_end, theta_c,
+                               prng=np.random, theta_c_max=None):
+
+    if t >= t_end:
+        return np.inf
+
+    # For constant introduction rate
+    if not callable(theta_c):
+
+        if theta_c == 0:
+            return np.inf
+
+        next_t = t + prng.exponential(1.0 / theta_c)
+        return next_t if next_t < t_end else np.inf
+
+    # For a monotonically decaying introduction rate
+    if theta_c_max is None:
+        theta_c_max = theta_c(t)
+
+        if theta_c_max == 0:
+            return np.inf
+
+    while True:
+        
+        t += prng.exponential(1.0 / theta_c_max)
+
+        if t >= t_end:
+            return np.inf
+
+        rate = theta_c(t)
+
+        if prng.random() < rate / theta_c_max:
+            return t
+
 #################################################################################
 # Run simulation
 #################################################################################
@@ -251,7 +282,8 @@ def simulate_repertoire(homeostatic_control_func, death_func, antigen_response_f
                         c_initial=0.0, a_initial=0.0, c_new=1.0, a_new=0.0,
                         c_cutoff=0.1,
                         continuum_update_method="euler", demographic_stochasticity='no', seed=1996,  prng=np.random,
-                        verbose=False, sample_dt=None):
+                        verbose=False, sample_dt=None,
+                        theta_c_max=None):
 
     #set rng
     prng.seed(seed=seed)
@@ -275,25 +307,37 @@ def simulate_repertoire(homeostatic_control_func, death_func, antigen_response_f
     # main loop
     t = t_start
     records = {"t": [], "c": []}
+
     next_sample_t = record_sample(records, c, a, param_state, t, t_start, sample_dt)
+
+    # Schedule the first introduction.
+    next_intro_t = get_next_introduction_time(t, t_end, theta_c, prng=prng, theta_c_max=theta_c_max)
+
     while t < t_end:
-        introevent = False
-        
+        # Choose the next time we need to stop.
+        sample_t = next_sample_t if sample_dt is not None else np.inf
+        t_stop = min(next_intro_t, sample_t, t_end)
+
         c, a, t = continuum_evolution_steps(c, a, param_state, t, dt, theta_c,
-                    homeostatic_control_func, death_func, antigen_response_func, migration_func,
-                    c_cutoff, antigen_update_func, method=continuum_update_method,
-                    demographic_stochasticity=demographic_stochasticity, prng=prng)
-        
+                                            homeostatic_control_func, death_func,
+                                            antigen_response_func, migration_func,
+                                            c_cutoff, antigen_update_func,
+                                            method=continuum_update_method,
+                                            demographic_stochasticity=demographic_stochasticity,
+                                            prng=prng, t_stop=t_stop)
+
         next_sample_t = record_sample(records, c, a, param_state, t, next_sample_t, sample_dt)
-        
-        progress_t = print_progress(c, t, t_end, pbar, progress_t,  c_cutoff)
-        
-        introevent = True
-        if introevent:
-            c, a, param_state = execute_introduction_event(c, a, param_state, c_new, c_cutoff, a_new, 
+        progress_t = print_progress(c, t, t_end, pbar, progress_t, c_cutoff)
+
+        # Introduce a clone only when its scheduled time is reached.
+        if t == next_intro_t:
+            c, a, param_state = execute_introduction_event(c, a, param_state, c_new, c_cutoff, a_new,
                                                            fixed_antigen_pool, param_introduction_func,
                                                            prng=prng)
-            
+
+            # Schedule the following introduction.
+            next_intro_t = get_next_introduction_time(t, t_end, theta_c, prng=prng, theta_c_max=theta_c_max)
+
     pbar.close()
 
     return c, a, param_state, records
